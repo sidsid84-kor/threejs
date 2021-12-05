@@ -121,18 +121,19 @@ class DDV {
 		let maxRow = data.map(function (row) {
 			return Math.max.apply(Math, row);
 		});
-		let max_value = Math.max.apply(null, maxRow);
+		let highestValue = Math.max.apply(null, maxRow);
 
 		let minRow = data.map(function (row) {
 			return Math.min.apply(Math, row);
 		});
-		let min_value = Math.min.apply(null, minRow);
+		let lowest_value = Math.min.apply(null, minRow);
+
 		function make_normaldata(data){
 			let normal_data = [];
 			for (let j = 0; j < data.length; j++) {
 					let numbers = data[j];
 							
-					numbers = numbers.map(v => Math.round(v / (max_value/20)));
+					numbers = numbers.map(v => Math.round(v / (highestValue/20)));
 					normal_data.push(numbers)
 				}
 			return normal_data
@@ -147,7 +148,7 @@ class DDV {
 			);
 			
 			if(use_auto_color===true){
-				boxcolor = auto_color(max_value,data);
+				boxcolor = auto_color(data);
 			}
 			let material = new THREE.MeshPhongMaterial({color: boxcolor})
 			let cube = new THREE.Mesh(geometry, material);
@@ -230,7 +231,7 @@ class DDV {
 			
 			let material = new THREE.MeshBasicMaterial( { color: 0xe5ecf6 } );
 			for(let i=0; i<yaxis_segment; i++) {
-				make_label(Math.round(((Math.ceil(max_value,1)/yaxis_segment)*i)).toString(),
+				make_label(Math.round(((Math.ceil(highestValue,1)/yaxis_segment)*i)).toString(),
 					'../examples/helvetiker_regular.typeface.json',wall_group,
 					(-0.5*(boxwidth+dst)-distance_towall)-2,((max_value + 2*distance_towall) / yaxis_segment)*i+i*0.1
 					,(-0.5*(boxheight+dst)-distance_towall),0,0,0*Math.PI);
@@ -252,8 +253,8 @@ class DDV {
 
 			return wall_group
 		}
-		function auto_color(max_value,cur_value){
-			let red = Math.round((cur_value/max_value)*100);
+		function auto_color(cur_value){
+			let red = Math.round((cur_value/20)*100);
 			let color = 'rgb('+String(red)+'%, 40%, 80%)';
 			
 			return color;
@@ -268,7 +269,7 @@ class DDV {
 			//차트 중앙 위치, 그리고 max_value의 2배 되는 높이에서 뽷
 			light.position.set(
 				data.length * (boxwidth + dst) * 0.6,
-				max_value * 2,
+				20 * 2,
 				data[0].length * (boxheight + dst) * 0.6
 			);
 			return light
@@ -532,8 +533,24 @@ class DDV {
 
 	candelStick3Dchart(data,boxwidth, boxheight, dst = 1, x_label = null, z_label = null, use_auto_color = false, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
-		let candleData = make_candleData(data);
+		let maxRow = data.map(function (row) {
+			return Math.max.apply(Math, row);
+		});
+		let max_value = Math.max.apply(null, maxRow);
+		let normal_data = make_normaldata(data);
+		let candleData = make_candleData(normal_data);
 		console.log(candleData)
+		function make_normaldata(data){
+			let normal_data = [];
+			for (let j = 0; j < data.length; j++) {
+					let numbers = data[j];
+							
+					numbers = numbers.map(v => Math.round(v / (max_value/20)));
+					normal_data.push(numbers)
+				}
+			return normal_data
+		}
+
 		function make_candleData(data) {
 			let low_list = [];
 			for(let i = 0; i <data.length ; i++){
@@ -552,7 +569,7 @@ class DDV {
 			);
 			
 			if(use_auto_color===true){
-				boxcolor = auto_color(max_value,data[1]);
+				boxcolor = auto_color(data[1]);
 			}
 			let material = new THREE.MeshPhongMaterial({color: boxcolor})
 			let cube = new THREE.Mesh(geometry, material);
@@ -657,8 +674,8 @@ class DDV {
 
 			return wall_group
 		}
-		function auto_color(max_value,cur_value){
-			let red = Math.round((cur_value/max_value)*100);
+		function auto_color(cur_value){
+			let red = Math.round((cur_value/20)*100);
 			let color = 'rgb('+String(red)+'%, 40%, 80%)';
 			
 			return color;
@@ -712,11 +729,6 @@ class DDV {
 				
 			} );
 		}
-
-		let maxRow = data.map(function (row) {
-			return Math.max.apply(Math, row);
-		});
-		let max_value = Math.max.apply(null, maxRow);
 
 		//리턴시킬 그룹객체
 		let group_start = new THREE.Group();
