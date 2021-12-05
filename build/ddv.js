@@ -531,7 +531,7 @@ class DDV {
 		return group_start;
 	}
 
-	candelStick3Dchart(data,boxwidth, boxheight, dst = 1, x_label = null, z_label = null, use_auto_color = false, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+	candelStick3Dchart(data,boxwidth, boxheight, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
 		let maxRow = data.map(function (row) {
 			return Math.max.apply(Math, row);
@@ -563,18 +563,24 @@ class DDV {
 			return low_list
 		}
 		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a){
+			let cylinderLength = data[0] - data[1];
+			let isReversed=false;
+			if (data[0] < data[1]){
+				cylinderLength = data[1]-data[0];
+				isReversed=true;
+			}
 			let geometry = new THREE.CylinderGeometry( 
 				boxwidth,boxwidth,
-				data[2]-data[3],46,20				
+				cylinderLength,46,20				
 			);
 			
 			if(use_auto_color===true){
-				boxcolor = auto_color(data[1]);
+				boxcolor = auto_color(isReversed);
 			}
 			let material = new THREE.MeshPhongMaterial({color: boxcolor})
 			let cube = new THREE.Mesh(geometry, material);
 			cube.position.x = (boxwidth + dst) * a;
-			cube.position.y = (data[2]+data[3]) / 2
+			cube.position.y = (data[0] + data[1]) / 2
 			
 			cube.castShadow = true;
 			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data) / 2,(boxheight + dst) ));
@@ -644,7 +650,7 @@ class DDV {
 				((data.length-0.5) * (boxwidth + dst)+distance_towall)
 			];
 			let position_z = [
-				(-0.5*(boxheight+dst)-distance_towall),
+				(-0.5*(dst)-distance_towall),
 				((data[0].length-1) * (boxheight + dst))/2,
 				((data[0].length -0.5) * (boxheight + dst))+distance_towall,
 				((data[0].length-1) * (boxheight + dst))/2
@@ -674,9 +680,11 @@ class DDV {
 
 			return wall_group
 		}
-		function auto_color(cur_value){
-			let red = Math.round((cur_value/20)*100);
-			let color = 'rgb('+String(red)+'%, 40%, 80%)';
+		function auto_color(isReversed=true){
+			let color = 'rgb(255, 23, 23)';
+			if (isReversed){
+				color = 'rgb(56, 200, 56)';
+			}
 			
 			return color;
 
