@@ -117,6 +117,28 @@ class DDV {
 
 	Box3Dchart(data,boxwidth, boxheight, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
+
+		let maxRow = data.map(function (row) {
+			return Math.max.apply(Math, row);
+		});
+		let max_value = Math.max.apply(null, maxRow);
+
+		let minRow = data.map(function (row) {
+			return Math.min.apply(Math, row);
+		});
+		let min_value = Math.min.apply(null, minRow);
+		function make_normaldata(data){
+			let normal_data = [];
+			for (let j = 0; j < data.length; j++) {
+					let numbers = data[j];
+							
+					numbers = numbers.map(v => Math.round(v / (max_value/20)));
+					normal_data.push(numbers)
+				}
+			return normal_data
+		}
+		
+
 		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a, b){
 			let geometry = new THREE.BoxGeometry(
 				boxwidth,
@@ -288,33 +310,31 @@ class DDV {
 			} );
 		}
 
-		let maxRow = data.map(function (row) {
-			return Math.max.apply(Math, row);
-		});
-		let max_value = Math.max.apply(null, maxRow);
+		
 
 		//리턴시킬 그룹객체
 		let group_start = new THREE.Group();
-
+		let normal_data = make_normaldata(data);
 		// 벽 그리기
-		let wall = make_wall(data, boxwidth, boxheight, dst,x_label,z_label, max_value, yaxis_segment);
+		let wall = make_wall(normal_data, boxwidth, boxheight, dst,x_label,z_label,20, yaxis_segment);
 		wall.name="wall";
 		group_start.add(wall);
 	
 
 		//빛뿌리기
-		let light =make_light(data, boxwidth, boxheight, dst);
+		let light =make_light(normal_data, boxwidth, boxheight, dst);
 		light.name="light";
 		group_start.add(light);
 		
 		//그래프 만들기
-		let box_group = read_array(data, boxwidth, boxheight, boxcolor, dst);
+		let box_group = read_array(normal_data, boxwidth, boxheight, boxcolor, dst);
 		box_group.name = "box_group"
 		group_start.add(box_group);
 
 		group_start.pushData=function(new_data){ // 리얼타임 데이터
-			let init_arr = data.flat();
-			let arr = new_data.flat();
+			let noraml_newdata = make_normaldata(new_data);
+			let init_arr = normal_data.flat();
+			let arr = noraml_newdata.flat();
 			if (arr.length == box_group.children.length){ //shape 같을때만 동작
 				for (let i = 0; i < (arr.length); i++) {
 					box_group.children[i].scale.set(1,(arr[i]/init_arr[i])/2,1)
