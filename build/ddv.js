@@ -1,7 +1,6 @@
 /**
  *
  */
-//aaaa
 
 
 class DDV {
@@ -531,7 +530,7 @@ class DDV {
 		return group_start;
 	}
 
-	candelStick3Dchart(data,boxwidth, boxheight, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+	candelStick3Dchart(data, ridius, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
 		let maxRow = data.map(function (row) {
 			return Math.max.apply(Math, row);
@@ -562,7 +561,7 @@ class DDV {
 			}
 			return low_list
 		}
-		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a){
+		function make_chart(data, ridius, boxcolor, dst, a){
 			let cylinderLength = data[0] - data[1];
 			let isReversed=false;
 			if (data[0] < data[1]){
@@ -570,7 +569,7 @@ class DDV {
 				isReversed=true;
 			}
 			let geometry = new THREE.CylinderGeometry( 
-				boxwidth,boxwidth,
+				ridius,ridius,
 				cylinderLength,46,20				
 			);
 			
@@ -579,11 +578,11 @@ class DDV {
 			}
 			let material = new THREE.MeshPhongMaterial({color: boxcolor})
 			let cube = new THREE.Mesh(geometry, material);
-			cube.position.x = (boxwidth + dst) * a;
+			cube.position.x = (ridius + dst) * a;
 			cube.position.y = (data[0] + data[1]) / 2
 			
 			cube.castShadow = true;
-			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data) / 2,(boxheight + dst) ));
+			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(ridius + dst)),(data) / 2,(ridius + dst) ));
 			cube.children[0].visible = false;
 			cube.pickEvent = function(turn=true){
 				cube.children[0].visible = turn;
@@ -614,16 +613,16 @@ class DDV {
 			return edgeline_group;
 		}
 
-		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=1.5) {
+		function make_wall(data, ridius, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=10) {
 			let wall_group = new THREE.Group();
 			{ // 바닥
-				let geometry = new THREE.PlaneGeometry(data.length * (boxwidth + dst) + 2*distance_towall,(boxheight + dst) + 2*distance_towall);
+				let geometry = new THREE.PlaneGeometry(data.length * (ridius + dst) + 2*distance_towall, ridius + 2*distance_towall);
 				let material = new THREE.MeshBasicMaterial( {color: 0xe5ecf6} );
 				let plane_bottom = new THREE.Mesh( geometry, material );
 				plane_bottom.position.set(
-					((data.length - 1) * (boxwidth + dst)) / 2,
+					((data.length - 1) * (ridius + dst)) / 2,
 					0,
-					(boxheight + dst) / 2
+					ridius / 2
 				);
 				plane_bottom.rotation.x = 1.5* Math.PI;
 				
@@ -634,34 +633,34 @@ class DDV {
 				};
 				if (z_label!=null && z_label.length == data.length){
 					for(let i = 0; i <data.length ; i++){
-						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(boxwidth + dst)*(-i+(data.length/2)-0.5),(-(data[0].length)/2)*(boxheight + dst)-distance_towall-1,0.2,0,0,1.5*Math.PI);
+						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(ridius + dst)*(-i+(data.length/2)-0.5),(-0.5)*(ridius + dst)-distance_towall-1,0.2,0,0,1.5*Math.PI);
 					}
 				};
 				wall_group.add(plane_bottom);
 			}
 			
 
-			let width = [(data.length * (boxwidth + dst) + 2*distance_towall),(data[0].length * (boxheight + dst) + 2*distance_towall)];
+			let width = [(data.length * (ridius + dst) + 2*distance_towall),(ridius+ 2*distance_towall)];
 			let height = (max_value + 2*distance_towall)/yaxis_segment;
 			let position_x = [
-				((data.length-1)*(boxwidth+dst))/2,
-				(-0.5*(boxwidth+dst)-distance_towall),
-				((data.length-1)*(boxwidth+dst))/2,
-				((data.length-0.5) * (boxwidth + dst)+distance_towall)
+				((data.length-1)*(ridius+dst))/2,
+				(-0.5*(ridius+dst)-distance_towall),
+				((data.length-1)*(ridius+dst))/2,
+				((data.length-0.5) * (ridius + dst)+distance_towall)
 			];
 			let position_z = [
-				(-0.5*(dst)-distance_towall),
-				((data[0].length-1) * (boxheight + dst))/2,
-				((data[0].length -0.5) * (boxheight + dst))+distance_towall,
-				((data[0].length-1) * (boxheight + dst))/2
+				(-0.5*(radius)-distance_towall),
+				ridius/2,
+				((0.5) * ridius)+distance_towall,
+				ridius /2
 							];
 			
 			let material = new THREE.MeshBasicMaterial( { color: 0xe5ecf6 } );
 			for(let i=0; i<yaxis_segment; i++) {
 				make_label(Math.round(((Math.ceil(max_value,1)/yaxis_segment)*i)).toString(),
 					'../examples/helvetiker_regular.typeface.json',wall_group,
-					(-0.5*(boxwidth+dst)-distance_towall)-2,((max_value + 2*distance_towall) / yaxis_segment)*i+i*0.1
-					,(-0.5*(boxheight+dst)-distance_towall),0,0,0*Math.PI);
+					(-0.5*(ridius+dst)-distance_towall)-2,((max_value + 2*distance_towall) / yaxis_segment)*i+i*0.1
+					,(-0.5*(ridius+dst)-distance_towall),0,0,0*Math.PI);
 				for (let j=0; j<4; j++) {
 					let geometry = new THREE.PlaneGeometry(width[j%2],height);
 					
@@ -690,24 +689,24 @@ class DDV {
 
 		}
 
-		function make_light(data, boxwidth, boxheight, dst){
+		function make_light(data, ridius, dst){
 			let color = 0xFFFFFF;
 			let intensity = 1;
 			let light = new THREE.PointLight(color, intensity);
 			light.castShadow = true;
 			//차트 중앙 위치, 그리고 max_value의 2배 되는 높이에서 뽷
 			light.position.set(
-				data.length * (boxwidth + dst) * 0.6,
+				data.length * (ridius + dst) * 0.6,
 				max_value * 2,
-				data[0].length * (boxheight + dst) * 0.6
+				data[0].length * (ridius + dst) * 0.6
 			);
 			return light
 		}
 
-		function read_array(data, boxwidth, boxheight, boxcolor, dst){
+		function read_array(data, ridius, boxcolor, dst){
 			let box_group = new THREE.Group();
 			for (let i = 0; i < (data.length); i++) {
-				box_group.add(make_chart(data[i], boxwidth, boxheight, boxcolor, dst, i));
+				box_group.add(make_chart(data[i], ridius, boxcolor, dst, i));
 			}
 			return box_group;
 		}
@@ -742,18 +741,18 @@ class DDV {
 		let group_start = new THREE.Group();
 
 		// 벽 그리기
-		let wall = make_wall(candleData, boxwidth, boxheight, dst,x_label,z_label, max_value, yaxis_segment);
+		let wall = make_wall(candleData, ridius, dst,x_label,z_label, max_value, yaxis_segment);
 		wall.name="wall";
 		group_start.add(wall);
 	
 
 		//빛뿌리기
-		let light =make_light(candleData, boxwidth, boxheight, dst);
+		let light =make_light(candleData, ridius, dst);
 		light.name="light";
 		group_start.add(light);
 		
 		//그래프 만들기
-		let box_group = read_array(candleData, boxwidth, boxheight, boxcolor, dst);
+		let box_group = read_array(candleData, ridius, boxcolor, dst);
 		box_group.name = "box_group"
 		group_start.add(box_group);
 
