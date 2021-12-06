@@ -562,7 +562,9 @@ class DDV {
 			return low_list
 		}
 		function make_chart(data, ridius, boxcolor, dst, a){
+			let candleGroup = new THREE.Group;
 			let cylinderLength = data[0] - data[1];
+			let stickLength = data[2] - data[3];
 			let isReversed=false;
 			if (data[0] < data[1]){
 				cylinderLength = data[1]-data[0];
@@ -572,15 +574,21 @@ class DDV {
 				ridius,ridius,
 				cylinderLength,46,20				
 			);
+			let stickGeometry = new THREE.CylinderGeometry( 
+				ridius*0.1,ridius*0.1,
+				stickLength,46,20				
+			);
 			
 			if(use_auto_color===true){
 				boxcolor = auto_color(isReversed);
 			}
 			let material = new THREE.MeshPhongMaterial({color: boxcolor})
 			let cube = new THREE.Mesh(geometry, material);
+			let stickCube = new THREE.Mesh(stickGeometry, material);
 			cube.position.x = (ridius + dst) * a;
 			cube.position.y = (data[0] + data[1]) / 2
-			
+			stickCube.position.x = (ridius + dst) * a;
+			stickCube.position.y = (data[2] + data[3]) / 2
 			cube.castShadow = true;
 			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(ridius + dst)),(data) / 2,(ridius + dst) ));
 			cube.children[0].visible = false;
@@ -590,7 +598,9 @@ class DDV {
 			cube.clickEvent = function(){
 				console.log(cube)
 			}
-			return cube
+			candleGroup.add(cube);
+			candleGroup.add(stickCube);
+			return candleGroup
 		}
 		function make_EdgeLine(geometry,position_x,position_y,position_z){
 			let edgeline_group = new THREE.Group();
@@ -613,7 +623,7 @@ class DDV {
 			return edgeline_group;
 		}
 
-		function make_wall(data, ridius, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=10) {
+		function make_wall(data, ridius, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=3) {
 			let wall_group = new THREE.Group();
 			{ // 바닥
 				let geometry = new THREE.PlaneGeometry(data.length * (ridius + dst) + 2*distance_towall, ridius + 2*distance_towall);
@@ -641,7 +651,7 @@ class DDV {
 			
 
 			let width = [(data.length * (ridius + dst) + 2*distance_towall),(ridius+ 2*distance_towall)];
-			let height = (max_value + 2*distance_towall)/yaxis_segment;
+			let height = (20)/yaxis_segment;
 			let position_x = [
 				((data.length-1)*(ridius+dst))/2,
 				(-0.5*(ridius+dst)-distance_towall),
@@ -659,8 +669,10 @@ class DDV {
 			for(let i=0; i<yaxis_segment; i++) {
 				make_label(Math.round(((Math.ceil(max_value,1)/yaxis_segment)*i)).toString(),
 					'../examples/helvetiker_regular.typeface.json',wall_group,
-					(-0.5*(ridius+dst)-distance_towall)-2,((max_value + 2*distance_towall) / yaxis_segment)*i+i*0.1
-					,(-0.5*(ridius+dst)-distance_towall),0,0,0*Math.PI);
+					(-0.5*(ridius+dst)-distance_towall)-2,
+					(20 / yaxis_segment)*i+i*0.1,
+					(-0.5*(ridius)-distance_towall),
+					0,0,0*Math.PI);
 				for (let j=0; j<4; j++) {
 					let geometry = new THREE.PlaneGeometry(width[j%2],height);
 					
@@ -668,7 +680,7 @@ class DDV {
 					
 					plane.position.set(
 						position_x[j],
-						((max_value + 2*distance_towall) / yaxis_segment)*(0.5+i)+i*0.1,
+						(20 / yaxis_segment)*(0.5+i)+i*0.1,
 						position_z[j]
 					);
 					plane.rotation.y = 0.5*j*Math.PI;
