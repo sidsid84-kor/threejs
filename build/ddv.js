@@ -531,6 +531,7 @@ class DDV {
 	}
 
 	candelStick3Dchart(data, ridius, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+		
 		var original_data = data;
 		let maxRow = data.map(function (row) {
 			return Math.max.apply(Math, row);
@@ -627,7 +628,7 @@ class DDV {
 			let wall_group = new THREE.Group();
 			{ // 바닥
 				let geometry = new THREE.PlaneGeometry(data.length * (ridius + dst) + 2*distance_towall, ridius + 2*distance_towall);
-				let material = new THREE.MeshBasicMaterial( {color: 0xe5ecf6} );
+				let material = new THREE.MeshBasicMaterial( {color: 0xcccccc} );
 				let plane_bottom = new THREE.Mesh( geometry, material );
 				plane_bottom.position.set(
 					((data.length - 1) * (ridius + dst)) / 2,
@@ -638,12 +639,12 @@ class DDV {
 				
 				if (x_label!=null && x_label.length == data[0].length){
 					for(let i = 0; i <data[0].length ; i++){
-						make_label(x_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(-(data.length)/2)*(boxwidth + dst)-distance_towall-1*x_label[i].length,(boxheight + dst)*(-i+(data[0].length/2)-0.5),0.2);
+						make_label(x_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(-(data.length)/2)*(radius + dst)-distance_towall-1*x_label[i].length,(radius + dst)*(-i+(data[0].length/2)-0.5),0.2);
 					}
 				};
 				if (z_label!=null && z_label.length == data.length){
 					for(let i = 0; i <data.length ; i++){
-						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(ridius + dst)*(-i+(data.length/2)-0.5),(-0.5)*(ridius + dst)-distance_towall-1,0.2,0,0,1.5*Math.PI);
+						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(ridius + dst)*(i+(-data.length/2)-0.5),(-0.5)*(ridius + dst)-distance_towall-1,0.2,0,0,1.5*Math.PI);
 					}
 				};
 				wall_group.add(plane_bottom);
@@ -665,11 +666,12 @@ class DDV {
 				ridius /2
 							];
 			
-			let material = new THREE.MeshBasicMaterial( { color: 0xe5ecf6 } );
+			let material = new THREE.MeshBasicMaterial( { color: 0xcccccc } );
 			for(let i=0; i<yaxis_segment; i++) {
-				make_label(Math.round(((Math.ceil(max_value,1)/yaxis_segment)*i)).toString(),
+				let yaxis_label = Math.round(((Math.ceil(max_value,1)/yaxis_segment)*i)).toString();
+				make_label(yaxis_label,
 					'../examples/helvetiker_regular.typeface.json',wall_group,
-					(-0.5*(ridius+dst)-distance_towall)-2,
+					(-0.5*(ridius+dst)-distance_towall)-2-0.3*yaxis_label.length,
 					(20 / yaxis_segment)*i+i*0.1,
 					(-0.5*(ridius)-distance_towall),
 					0,0,0*Math.PI);
