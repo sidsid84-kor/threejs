@@ -533,6 +533,7 @@ class DDV {
 	candelStick3Dchart(data, ridius, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		
 		var original_data = data;
+		console.log(typeof data)
 		let maxRow = data.map(function (row) {
 			return Math.max.apply(Math, row);
 		});
@@ -637,14 +638,14 @@ class DDV {
 				);
 				plane_bottom.rotation.x = 1.5* Math.PI;
 				
-				if (x_label!=null && x_label.length == data[0].length){
-					for(let i = 0; i <data[0].length ; i++){
-						make_label(x_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(-(data.length)/2)*(radius + dst)-distance_towall-1*x_label[i].length,(radius + dst)*(-i+(data[0].length/2)-0.5),0.2);
+				if (x_label!=null){
+					for(let i = 0; i < 1 ; i++){
+						make_label(x_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(-(data.length)/2)*(radius + dst)-distance_towall-2,(radius + dst)*(-i),0.2,0,0,1.5*Math.PI);
 					}
 				};
 				if (z_label!=null && z_label.length == data.length){
 					for(let i = 0; i <data.length ; i++){
-						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(ridius + dst)*(i+(-data.length/2)-0.5),(-0.5)*(ridius + dst)-distance_towall-1,0.2,0,0,1.5*Math.PI);
+						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(ridius + dst)*(i+(-data.length/2)-0.5),(-0.5)*(ridius + dst)-distance_towall-1,0.2,0,0,1.3*Math.PI);
 					}
 				};
 				wall_group.add(plane_bottom);
@@ -766,13 +767,249 @@ class DDV {
 		group_start.add(light);
 		
 		//그래프 만들기
-		let box_group = read_array(candleData, ridius, boxcolor, dst);
-		box_group.name = "box_group"
-		group_start.add(box_group);
+		let candle_group = read_array(candleData, ridius, boxcolor, dst);
+		candle_group.name = "candle_group"
+		group_start.add(candle_group);
 
 		group_start.pushData=function(new_data){ // 리얼타임 데이터
 			let init_arr = data.flat();
 			let arr = new_data.flat();
+			if (arr.length == candle_group.children.length){ //shape 같을때만 동작
+				for (let i = 0; i < (arr.length); i++) {
+					box_group.children[i].scale.set(1,(arr[i]/init_arr[i])/2,1)
+					box_group.children[i].position.y = (box_group.children[i].geometry.parameters.height * box_group.children[i].scale.y)/2;
+				}
+			}
+		}
+
+		group_start.getInstancegroup=function(){ // 리얼타임 데이터
+			return candle_group;
+		}
+		
+		return group_start;
+	}
+
+	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+		var original_data = data;
+
+		let maxRow = data.map(function (row) {
+			return Math.max.apply(Math, row);
+		});
+		let highestValue = Math.max.apply(null, maxRow);
+
+		let minRow = data.map(function (row) {
+			return Math.min.apply(Math, row);
+		});
+		let lowest_value = Math.min.apply(null, minRow);
+
+		function make_normaldata(data){
+			let normal_data = [];
+			for (let j = 0; j < data.length; j++) {
+					let numbers = data[j];
+							
+					numbers = numbers.map(v => Math.round(v / (highestValue/20)));
+					normal_data.push(numbers)
+				}
+			return normal_data
+		}
+		
+
+		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a, b){
+			let geometry = new THREE.BoxGeometry(
+				boxwidth,
+				data,
+				boxheight
+			);
+			
+			if(use_auto_color===true){
+				boxcolor = auto_color(data);
+			}
+			let material = new THREE.MeshPhongMaterial({color: boxcolor})
+			let cube = new THREE.Mesh(geometry, material);
+			cube.position.x = (boxwidth + dst) * a;
+			cube.position.y = (data) / 2
+			cube.position.z = (boxheight + dst) * b;
+			cube.castShadow = true;
+			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data) / 2,(boxheight + dst) * (b+1)));
+			cube.children[0].visible = false;
+			cube.pickEvent = function(turn=true){
+				cube.children[0].visible = turn;
+			}
+			cube.clickEvent = function(){
+				console.log(cube)
+			}
+			return cube
+		}
+		function make_EdgeLine(geometry,position_x,position_y,position_z){
+			let edgeline_group = new THREE.Group();
+			let edges = new THREE.EdgesGeometry( geometry );
+			let material = new THREE.LineBasicMaterial( { color: 0xffffff } )
+			let line = new THREE.LineSegments( edges, material );
+			let points = [];
+			points.push( new THREE.Vector3( 0, position_y, 0 ) );
+			points.push( new THREE.Vector3( 0, position_y, -position_z ) );
+			let points2 = [];
+			points2.push( new THREE.Vector3( 0, position_y, 0 ) );
+			points2.push( new THREE.Vector3( position_x, position_y, 0 ) );
+			let geometry2 = new THREE.BufferGeometry().setFromPoints( points );
+			let geometry3 = new THREE.BufferGeometry().setFromPoints( points2 );
+			let line2 = new THREE.Line( geometry2, material );
+			let line3 = new THREE.Line( geometry3, material );
+			edgeline_group.add(line3)
+			edgeline_group.add(line2)
+			edgeline_group.add(line)
+			return edgeline_group;
+		}
+
+		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=1.5) {
+			let wall_group = new THREE.Group();
+			{ // 바닥
+				let geometry = new THREE.PlaneGeometry(data.length * (boxwidth + dst) + 2*distance_towall,(data[0].length * (boxheight + dst)) + 2*distance_towall);
+				let material = new THREE.MeshBasicMaterial( {color: 0xe5ecf6} );
+				let plane_bottom = new THREE.Mesh( geometry, material );
+				plane_bottom.position.set(
+					((data.length - 1) * (boxwidth + dst)) / 2,
+					0,
+					((data[0].length - 1) * (boxheight + dst)) / 2
+				);
+				plane_bottom.rotation.x = 1.5* Math.PI;
+				
+				if (x_label!=null && x_label.length == data[0].length){
+					for(let i = 0; i <data[0].length ; i++){
+						make_label(x_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(-(data.length)/2)*(boxwidth + dst)-distance_towall-1*x_label[i].length,(boxheight + dst)*(-i+(data[0].length/2)-0.5),0.2);
+					}
+				};
+				if (z_label!=null && z_label.length == data[0].length){
+					for(let i = 0; i <data.length ; i++){
+						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(boxwidth + dst)*(-i+(data.length/2)-0.5),(-(data[0].length)/2)*(boxheight + dst)-distance_towall-1,0.2,0,0,1.5*Math.PI);
+					}
+				};
+				wall_group.add(plane_bottom);
+			}
+			
+
+			let width = [(data.length * (boxwidth + dst) + 2*distance_towall),(data[0].length * (boxheight + dst) + 2*distance_towall)];
+			let height = (max_value + 2*distance_towall)/yaxis_segment;
+			let position_x = [
+				((data.length-1)*(boxwidth+dst))/2,
+				(-0.5*(boxwidth+dst)-distance_towall),
+				((data.length-1)*(boxwidth+dst))/2,
+				((data.length-0.5) * (boxwidth + dst)+distance_towall)
+			];
+			let position_z = [
+				(-0.5*(boxheight+dst)-distance_towall),
+				((data[0].length-1) * (boxheight + dst))/2,
+				((data[0].length -0.5) * (boxheight + dst))+distance_towall,
+				((data[0].length-1) * (boxheight + dst))/2
+							];
+			
+			let material = new THREE.MeshBasicMaterial( { color: 0xe5ecf6 } );
+			for(let i=0; i<yaxis_segment; i++) {
+				make_label(Math.round(((Math.ceil(highestValue,1)/yaxis_segment)*i)).toString(),
+					'../examples/helvetiker_regular.typeface.json',wall_group,
+					(-0.5*(boxwidth+dst)-distance_towall)-2,((max_value + 2*distance_towall) / yaxis_segment)*i+i*0.1
+					,(-0.5*(boxheight+dst)-distance_towall),0,0,0*Math.PI);
+				for (let j=0; j<4; j++) {
+					let geometry = new THREE.PlaneGeometry(width[j%2],height);
+					
+					let plane = new THREE.Mesh( geometry, material );
+					
+					plane.position.set(
+						position_x[j],
+						((max_value + 2*distance_towall) / yaxis_segment)*(0.5+i)+i*0.1,
+						position_z[j]
+					);
+					plane.rotation.y = 0.5*j*Math.PI;
+					console.log(Math.ceil(max_value,1))
+					wall_group.add(plane);
+				}
+			};
+
+			return wall_group
+		}
+		function auto_color(cur_value){
+			let red = Math.round((cur_value/20)*100);
+			let color = 'rgb('+String(red)+'%, 40%, 80%)';
+			
+			return color;
+
+		}
+
+		function make_light(data, boxwidth, boxheight, dst){
+			let color = 0xFFFFFF;
+			let intensity = 1;
+			let light = new THREE.PointLight(color, intensity);
+			light.castShadow = true;
+			//차트 중앙 위치, 그리고 max_value의 2배 되는 높이에서 뽷
+			light.position.set(
+				data.length * (boxwidth + dst) * 0.6,
+				20 * 2,
+				data[0].length * (boxheight + dst) * 0.6
+			);
+			return light
+		}
+
+		function read_array(data, boxwidth, boxheight, boxcolor, dst){
+			let box_group = new THREE.Group();
+			for (let i = 0; i < (data.length); i++) {
+				for (let j = 0; j < data[i].length; j++) {
+					box_group.add(make_chart(data[i][j], boxwidth, boxheight, boxcolor, dst, i, j));
+				}
+			}
+			return box_group;
+		}
+
+		function make_label(text,font_path='./helvetiker_regular.typeface.json',group,positionx,positiony,positionz,rotationx=0,rotationy=0,rotationz=0){
+			
+			let loader = new THREE.FontLoader();
+			loader.load( font_path, function ( font ) {
+
+				let textGeo = new THREE.TextGeometry( text, {
+
+					font: font,
+					size: 0.7,
+					height: 0,
+					curveSegments: 11,
+				} );
+				
+				let textMaterial = new THREE.MeshPhongMaterial( { color: 0x000000} );
+
+				let mesh = new THREE.Mesh( textGeo, textMaterial );
+				
+				mesh.position.set(positionx,positiony,positionz)
+				if (rotationx !=0){ mesh.rotation.x = rotationx };
+				if (rotationy !=0){ mesh.rotation.y = rotationy };
+				if (rotationz !=0){ mesh.rotation.z = rotationz };
+				group.add( mesh );
+				
+			} );
+		}
+
+		
+
+		//리턴시킬 그룹객체
+		let group_start = new THREE.Group();
+		let normal_data = make_normaldata(data);
+		// 벽 그리기
+		let wall = make_wall(normal_data, boxwidth, boxheight, dst,x_label,z_label,20, yaxis_segment);
+		wall.name="wall";
+		group_start.add(wall);
+	
+
+		//빛뿌리기
+		let light =make_light(normal_data, boxwidth, boxheight, dst);
+		light.name="light";
+		group_start.add(light);
+		
+		//그래프 만들기
+		let box_group = read_array(normal_data, boxwidth, boxheight, boxcolor, dst);
+		box_group.name = "box_group"
+		group_start.add(box_group);
+
+		group_start.pushData=function(new_data){ // 리얼타임 데이터
+			let noraml_newdata = make_normaldata(new_data);
+			let init_arr = normal_data.flat();
+			let arr = noraml_newdata.flat();
 			if (arr.length == box_group.children.length){ //shape 같을때만 동작
 				for (let i = 0; i < (arr.length); i++) {
 					box_group.children[i].scale.set(1,(arr[i]/init_arr[i])/2,1)
