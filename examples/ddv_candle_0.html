@@ -20,20 +20,18 @@
     <body>
         <div id="webgl-output"></div>
         <script>
-            var porkData,porkArray,porkLabel;
 
-            ;$(window).ready(function(){
-                $.getJSON("porkshort.json", function(data){
-                    porkData = data;       
+            var porkData,porkArray,porkLabel;
+            $.getJSON("porkshort.json", function(data){
+                    porkData = data;
                     porkArray = Object.values(porkData);
-                    porkLabel = Object.keys(porkData);             
+                    porkLabel = Object.keys(porkData);     
                 }).fail(function(){
                     console.log("An error has occurred.");
-                });
             });
             
+            
             function init() {
-
                 var scene = new THREE.Scene();
                 var camera = new THREE.PerspectiveCamera(
                     45,
@@ -50,7 +48,7 @@
                 
                 //화면 마우스로 회전시키기
                 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-                camera.position.set(-3.044746720096075,46.82530692273769,87.33408658621572);
+                camera.position.set(-15.5432293673901505,41.302054083578284,61.49515288119142);
                 controls.update();
 
                 
@@ -68,22 +66,9 @@
                 }
 
                 
+
+                let x_label = ['pork_retail_price']
                 
-
-                let n = 15;
-                let nv = 10;
-                let arr1 = new Array(n);
-                for (var i = 0; i < n; i++) {
-                    arr1[i] = new Array(nv);
-                    for (let j =0;j<nv;j++){
-                        arr1[i][j]= Math.random()*100;
-                    }
-                }
-
-                
-
-                let x_label = ['x_1']
-                let z_label = ['z_1','z_2','z_3','z_4','z_5','z_6','z_7','z_8','z_9','z_10','z_11','z_12','z_13','z_14','z_15']
 
                 var ddv = new DDV(renderer.domElement);
                 
@@ -94,7 +79,6 @@
                                             z_label=porkLabel,
                                             use_auto_color = true,
                                             yaxis_segment = 15,
-                                            boxcolor = 'rgb(10%, 40%, 80%)'
                                         )
                 
                 scene.add(chart);
