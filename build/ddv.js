@@ -813,6 +813,113 @@ class DDV {
 			return normal_data
 		}
 		
+		function initBones() {
+
+			const segmentHeight = boxwidth+dst;
+			const segmentCount = data[0].length;
+			const height = segmentHeight * segmentCount;
+			const halfHeight = height * 0.5;
+
+			const sizing = {
+				segmentHeight: segmentHeight,
+				segmentCount: segmentCount,
+				height: height,
+				halfHeight: halfHeight
+			};
+
+			const geometry = createGeometry( sizing );
+			const bones = createBones( sizing );
+			let mesh = createMesh( geometry, bones );
+
+			mesh.scale.multiplyScalar( 1 );
+			return mesh;
+
+		}
+
+		function createGeometry( sizing ) {
+
+			const geometry = new THREE.CylinderGeometry(
+				1, // radiusTop
+				1, // radiusBottom
+				sizing.height, // height
+				8, // radiusSegments
+				sizing.segmentCount * 3, // heightSegments
+				false // openEnded
+			);
+
+			const position = geometry.attributes.position;
+
+			const vertex = new THREE.Vector3();
+
+			const skinIndices = [];
+			const skinWeights = [];
+
+			for ( let i = 0; i < position.count; i ++ ) {
+
+				vertex.fromBufferAttribute( position, i );
+
+				const y = ( vertex.y + sizing.halfHeight );
+
+				const skinIndex = Math.floor( y / sizing.segmentHeight );
+				const skinWeight = ( y % sizing.segmentHeight ) / sizing.segmentHeight;
+
+				skinIndices.push( skinIndex, skinIndex + 1, 0, 0 );
+				skinWeights.push( 1 - skinWeight, skinWeight, 0, 0 );
+
+			}
+
+			geometry.setAttribute( 'skinIndex', new THREE.Uint16BufferAttribute( skinIndices, 4 ) );
+			geometry.setAttribute( 'skinWeight', new THREE.Float32BufferAttribute( skinWeights, 4 ) );
+
+			return geometry;
+
+		}
+
+		function createBones( sizing ) {
+
+			let bones = [];
+
+			let prevBone = new THREE.Bone();
+			bones.push( prevBone );
+			prevBone.position.y = - sizing.halfHeight;
+
+			for ( let i = 0; i < sizing.segmentCount; i ++ ) {
+
+				const bone = new THREE.Bone();
+				bone.position.x = sizing.segmentHeight;
+				bones.push( bone );
+				prevBone.add( bone );
+				prevBone = bone;
+
+			}
+
+			return bones;
+
+		}
+
+		function createMesh( geometry, bones ) {
+
+			const material = new THREE.MeshPhongMaterial( {
+				color: 0x156289,
+				emissive: 0x072534,
+				side: THREE.DoubleSide,
+				
+			} );
+
+			const mesh = new THREE.SkinnedMesh( geometry,	material );
+			mesh.rotation.z = 0.5*Math.PI;
+			mesh.rotation.y = 0.5*Math.PI;
+			mesh.position.z = -bones[0].position.y - boxwidth
+			mesh.position.y = boxwidth
+			const skeleton = new THREE.Skeleton( bones );
+
+			mesh.add( bones[ 0 ] );
+
+			mesh.bind( skeleton );
+
+			return mesh;
+
+		}
 
 		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a, b){
 			let geometry = new THREE.BoxGeometry(
@@ -861,7 +968,7 @@ class DDV {
 			return edgeline_group;
 		}
 
-		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=1.5) {
+		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=0) {
 			let wall_group = new THREE.Group();
 			{ // 바닥
 				let geometry = new THREE.PlaneGeometry(data.length * (boxwidth + dst) + 2*distance_towall,(data[0].length * (boxheight + dst)) + 2*distance_towall);
@@ -950,13 +1057,13 @@ class DDV {
 		}
 
 		function read_array(data, boxwidth, boxheight, boxcolor, dst){
-			let box_group = new THREE.Group();
+			let bone_group = new THREE.Group();
 			for (let i = 0; i < (data.length); i++) {
-				for (let j = 0; j < data[i].length; j++) {
-					box_group.add(make_chart(data[i][j], boxwidth, boxheight, boxcolor, dst, i, j));
-				}
+				let bones = initBones()
+				bones.position.x = i*(boxwidth+dst)
+				bone_group.add(bones);
 			}
-			return box_group;
+			return bone_group;
 		}
 
 		function make_label(text,font_path='./helvetiker_regular.typeface.json',group,positionx,positiony,positionz,rotationx=0,rotationy=0,rotationz=0){
@@ -984,7 +1091,19 @@ class DDV {
 				
 			} );
 		}
-
+		// 애니메이션 클립 만들어줘야함
+		function read_array_position(data){
+			let start = 0;
+			for (let i = 0; i < (data.length); i++) {
+				for (let j = 0; j < (data[0].length); j++) {
+					if (j<2){
+						bone_group.children[i].skeleton.bones[j].position.x = normal_data[i][j];	
+					}else{
+					bone_group.children[i].skeleton.bones[j].position.x += normal_data[i][j] - normal_data[i][j-1];}
+					console.log(normal_data[i][j])
+				}
+			}
+		}
 		
 
 		//리턴시킬 그룹객체
@@ -1002,10 +1121,12 @@ class DDV {
 		group_start.add(light);
 		
 		//그래프 만들기
-		let box_group = read_array(normal_data, boxwidth, boxheight, boxcolor, dst);
-		box_group.name = "box_group"
-		group_start.add(box_group);
-
+		let bone_group = read_array(normal_data, boxwidth, boxheight, boxcolor, dst);
+		bone_group.name = "bone_group"
+		group_start.add(bone_group);
+		
+		read_array_position(normal_data)
+		console.log(bone_group.children[0].skeleton.bones)
 		group_start.pushData=function(new_data){ // 리얼타임 데이터
 			let noraml_newdata = make_normaldata(new_data);
 			let init_arr = normal_data.flat();
