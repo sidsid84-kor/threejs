@@ -51,13 +51,13 @@
           camera.updateProjectionMatrix();
         }
 
-        let n = 50;
+        let n = 5;
         let nv = 10;
         let arr1 = new Array(n);
         for (var i = 0; i < n; i++) {
           arr1[i] = new Array(nv);
           for (let j = 0; j < nv; j++) {
-            arr1[i][j] = Math.random() * 20;
+            arr1[i][j] = Math.random()*20 ;
           }
         }
 
@@ -68,9 +68,9 @@
 
         var chart = ddv.timeSeries3Dhart(
           (data = arr1),
-          (boxwidth = 1),
-          (boxheight = 1),
-          (dst = 0),
+          (boxwidth = 3),
+          (boxheight = 3),
+          (dst = 3),
           (x_label = x_label),
           (z_label = z_label),
           (use_auto_color = true),
@@ -94,23 +94,20 @@
           .getElementById('webgl-output')
           .appendChild(renderer.domElement);
 
-        window.addEventListener('mousemove', ddv.setPickPosition.bind(ddv));
-        window.addEventListener('mousedown', ddv.pickClickEvent.bind(ddv));
-        window.addEventListener('mouseout', ddv.clearPickPosition.bind(ddv));
-        window.addEventListener('mouseleave', ddv.clearPickPosition.bind(ddv));
+        
 
         renderScene();
 
         function renderScene(time) {
-          time += 0.001;
-          ss += 1; // livedata event
-          for (var i = 0; i < n; i++) {
-              for (let j =0;j<nv;j++){
-                  arr2[i][j] += 0.7*Math.sin(i+ss*0.1) ;
-              }
-          }
-          chart.pushData(arr2);
-          ddv.pick(ddv.get_position(), chart, camera, time);
+          // time += 0.001;
+          // ss += 1; // livedata event
+          // for (var i = 0; i < n; i++) {
+          //     for (let j =0;j<nv;j++){
+          //         arr2[i][j] += 0.7*Math.sin(i+ss*0.1) ;
+          //     }
+          // }
+          // chart.pushData(arr2);
+          
           controls.update();
 
           requestAnimationFrame(renderScene);
