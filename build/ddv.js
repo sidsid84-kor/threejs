@@ -839,8 +839,8 @@ class DDV {
 		function createGeometry( sizing ) {
 
 			const geometry = new THREE.CylinderGeometry(
-				1, // radiusTop
-				1, // radiusBottom
+				0.5, // radiusTop
+				0.5, // radiusBottom
 				sizing.height, // height
 				8, // radiusSegments
 				sizing.segmentCount * 3, // heightSegments
@@ -900,7 +900,7 @@ class DDV {
 		function createMesh( geometry, bones ) {
 
 			const material = new THREE.MeshPhongMaterial( {
-				color: 0x156289,
+				color: auto_color(Math.random()*20),
 				emissive: 0x072534,
 				side: THREE.DoubleSide,
 				
@@ -1061,6 +1061,7 @@ class DDV {
 			for (let i = 0; i < (data.length); i++) {
 				let bones = initBones()
 				bones.position.x = i*(boxwidth+dst)
+				// bones.position.y = 10;
 				bone_group.add(bones);
 			}
 			return bone_group;
@@ -1093,14 +1094,14 @@ class DDV {
 		}
 		// 애니메이션 클립 만들어줘야함
 		function read_array_position(data){
-			let start = 0;
+			
 			for (let i = 0; i < (data.length); i++) {
-				for (let j = 0; j < (data[0].length); j++) {
+				for (let j = 1; j < (bone_group.children[i].skeleton.bones.length); j++) {
 					if (j<2){
-						bone_group.children[i].skeleton.bones[j].position.x = normal_data[i][j];	
+						bone_group.children[i].skeleton.bones[j].position.x = data[i][j-1];	
 					}else{
-					bone_group.children[i].skeleton.bones[j].position.x += normal_data[i][j] - normal_data[i][j-1];}
-					console.log(normal_data[i][j])
+					bone_group.children[i].skeleton.bones[j].position.x += data[i][j-1] - data[i][j-2];}
+					
 				}
 			}
 		}
