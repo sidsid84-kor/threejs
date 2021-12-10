@@ -71,7 +71,7 @@
           (boxwidth = 3),
           (boxheight = 3),
           (dst = 1),
-          (timesteps = 10),
+          (timesteps = 20),
           (x_label = x_label),
           (z_label = z_label),
           (use_auto_color = true),
@@ -96,10 +96,10 @@
           .appendChild(renderer.domElement);
         
         var clock = new THREE.Clock();
-        var mixer = chart.getMixer();
-        console.log(mixer)
         
-
+        var mixer = chart.getMixer();
+        let chartgroup = chart.getInstancegroup();
+        
         renderScene();
 
         function renderScene(time) {
@@ -108,8 +108,10 @@
             for (let m =0;m<mixer.length;m++){
                 mixer[m].update( delta );
               }
-            }
+          }
           
+          chart.takeAnimation();
+          // console.log(chartgroup.children[0].position.z)
           
 
           controls.update();

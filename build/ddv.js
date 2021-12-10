@@ -789,9 +789,9 @@ class DDV {
 		return group_start;
 	}
 
-	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1,timesteps = 10, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1, timesteps = 20, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
-
+		console.log(timesteps)
 		let maxRow = data.map(function (row) {
 			return Math.max.apply(Math, row);
 		});
@@ -813,15 +813,10 @@ class DDV {
 			return normal_data
 		}
 		let animationGroup = new THREE.AnimationObjectGroup();
-		let animationGroup2 = new THREE.AnimationObjectGroup();
+		// let animationGroup2 = new THREE.AnimationObjectGroup();
+		
 
 		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a, b){
-			// let geometry = new THREE.BoxGeometry(
-			// 	boxwidth,
-			// 	data,
-			// 	boxheight
-			// );
-
 			let length = boxwidth+dst, width = data[b];
 
 			let shape = new THREE.Shape();
@@ -855,13 +850,15 @@ class DDV {
 			
 			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data[b]) / 2,(boxheight + dst) * (b+1)));
 			cube.children[0].visible = false;
+						
 			// cube.pickEvent = function(turn=true){
 			// 	cube.children[0].visible = turn;
 			// }
 			// cube.clickEvent = function(){
 			// 	console.log(cube)
 			// }
-			animationGroup2.add(cube);
+			// console.log(cube)
+			// animationGroup2.add(cube);
 			return cube
 		}
 		function make_EdgeLine(geometry,position_x,position_y,position_z){
@@ -885,25 +882,25 @@ class DDV {
 			return edgeline_group;
 		}
 
-		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=1.5) {
+		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, timesteps, distance_towall=1.5) {
 			let wall_group = new THREE.Group();
 			{ // 바닥
-				let geometry = new THREE.PlaneGeometry(data.length * (boxwidth + dst) + 2*distance_towall,(data[0].length * (boxheight + dst)) + 2*distance_towall);
+				let geometry = new THREE.PlaneGeometry(data.length * (boxwidth + dst) + 2*distance_towall,(timesteps * (boxheight + dst)) + 2*distance_towall);
 				let material = new THREE.MeshBasicMaterial( {color: 0xe5ecf6} );
 				let plane_bottom = new THREE.Mesh( geometry, material );
 				plane_bottom.position.set(
 					((data.length - 1) * (boxwidth + dst)) / 2,
 					0,
-					((data[0].length - 1) * (boxheight + dst)) / 2
+					((timesteps - 1) * (boxheight + dst)) / 2
 				);
 				plane_bottom.rotation.x = 1.5* Math.PI;
 				
 				if (x_label!=null && x_label.length == data[0].length){
-					for(let i = 0; i <data[0].length ; i++){
+					for(let i = 0; i <timesteps ; i++){
 						make_label(x_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(-(data.length)/2)*(boxwidth + dst)-distance_towall-1*x_label[i].length,(boxheight + dst)*(-i+(data[0].length/2)-0.5),0.2);
 					}
 				};
-				if (z_label!=null && z_label.length == data[0].length){
+				if (z_label!=null && z_label.length == timesteps){
 					for(let i = 0; i <data.length ; i++){
 						make_label(z_label[i],'../examples/helvetiker_regular.typeface.json',plane_bottom,(boxwidth + dst)*(-i+(data.length/2)-0.5),(-(data[0].length)/2)*(boxheight + dst)-distance_towall-1,0.2,0,0,1.5*Math.PI);
 					}
@@ -912,7 +909,7 @@ class DDV {
 			}
 			
 
-			let width = [(data.length * (boxwidth + dst) + 2*distance_towall),(data[0].length * (boxheight + dst) + 2*distance_towall)];
+			let width = [(data.length * (boxwidth + dst) + 2*distance_towall),(timesteps * (boxheight + dst) + 2*distance_towall)];
 			let height = (max_value + 2*distance_towall)/yaxis_segment;
 			let position_x = [
 				((data.length-1)*(boxwidth+dst))/2,
@@ -922,9 +919,9 @@ class DDV {
 			];
 			let position_z = [
 				(-0.5*(boxheight+dst)-distance_towall),
-				((data[0].length-1) * (boxheight + dst))/2,
-				((data[0].length -0.5) * (boxheight + dst))+distance_towall,
-				((data[0].length-1) * (boxheight + dst))/2
+				(timesteps * (boxheight + dst))/2 - distance_towall,
+				(timesteps * (boxheight + dst))+distance_towall,
+				(timesteps * (boxheight + dst))/2 -distance_towall
 							];
 			
 			let material = new THREE.MeshBasicMaterial( { color: 0xe5ecf6 } );
@@ -968,7 +965,7 @@ class DDV {
 			light.position.set(
 				data.length * (boxwidth + dst) * 0.6,
 				20 * 2,
-				data[0].length * (boxheight + dst) * 0.6
+				timesteps * (boxheight + dst) * 0.6
 			);
 			return light
 		}
@@ -1012,39 +1009,39 @@ class DDV {
 			} );
 		}
 
-		function range(start, end) {
+		//애니메이션 만들기....
+		function range(start, end, speed) {
 			let array = [];
 			let value_array = [];
-			for (let i = start; i < end; ++i) {
-				if (i%10 == 0){
-				array.push(i/10);}
-				value_array.push(0,0,-1*i*boxwidth)
+			for (let i = start; i < end; i++) {
+				array.push(i/speed);
+				value_array.push(0,0,-1*i*(boxwidth+dst))
 			}
 			return [array, value_array];
 		}
-
-		let KF_range = range(0,data[0].length)[0];
-		let KF_value =  range(0,data[0].length)[1];
+		let speed = 5
+		let KF_temp = range(0,data[0].length,speed);
+		let KF_range = KF_temp[0]
+		let KF_value =  KF_temp[1]
 		console.log(KF_range)
-		console.log(KF_value)
-		// let positionKF = new THREE.VectorKeyframeTrack( '.position', [ 0, 1, 2, 3,4,5 ], [ 0, 0, 0, 0, 0,-30, 0, 0, -60 ,0, 0, -90,0, 0, -120,0, 0, -150 ] );
+		console.log(-KF_value[5] - KF_value[2])
 		let positionKF = new THREE.VectorKeyframeTrack( '.position', KF_range, KF_value );
 		let opacityKF = new THREE.NumberKeyframeTrack( '.material.opacity', [ 0, 1, 2 ], [ 1, 0, 1 ] );
 		let clip = new THREE.AnimationClip( 'Action', -1, [ positionKF ] );
-		let clip2 = new THREE.AnimationClip( 'opacity', -1, [ opacityKF ] );
+		// let clip2 = new THREE.AnimationClip( 'opacity', -1, [ opacityKF ] );
 		let mixer = new THREE.AnimationMixer( animationGroup );
-		let mixer2 = new THREE.AnimationMixer( animationGroup2 );
+		// let mixer2 = new THREE.AnimationMixer( animationGroup2 );
 		let movingAction = mixer.clipAction( clip );
-		let visibleAction = mixer2.clipAction(clip2);
+		// let visibleAction = mixer2.clipAction(clip2);
 
 		movingAction.play();
-		visibleAction.play();
+		// visibleAction.play();
 
 		//리턴시킬 그룹객체
 		let group_start = new THREE.Group();
 		let normal_data = make_normaldata(data);
 		// 벽 그리기
-		let wall = make_wall(normal_data, boxwidth, boxheight, dst,x_label,z_label,20, yaxis_segment);
+		let wall = make_wall(normal_data, boxwidth, boxheight, dst,x_label,z_label,20, yaxis_segment,timesteps);
 		wall.name="wall";
 		group_start.add(wall);
 	
@@ -1058,14 +1055,29 @@ class DDV {
 		let box_group = read_array(normal_data, boxwidth, boxheight, boxcolor, dst);
 		box_group.name = "box_group"
 		group_start.add(box_group);
-		console.log(box_group)
-		group_start.getMixer=function(){ // 리얼타임 데이터
-			return [mixer , mixer2];
+		
+		group_start.getMixer=function(){ // 애니메이션 믹서
+			return [mixer];
 		}
-		group_start.getInstancegroup=function(){ // 리얼타임 데이터
+		group_start.getInstancegroup=function(){ // 박스그룹 내보내기
 			return box_group;
 		}
+		// let timestep = KF_range[1]-KF_range[0]
+		let step = -KF_value[5] - KF_value[2]
+		console.log(-KF_value[5] - KF_value[2])
+		let count = 0;
 		
+		group_start.takeAnimation=function(){
+			console.log(box_group.children[0].position.z)
+			for (let i = 0; i < data.length; i++) {
+				if ( box_group.children[0].position.z <= -step*count ){ 
+					box_group.children[i].children[count].material.opacity = 0;
+					count++;
+				}else{box_group.children[i].children[count].material.opacity += (KF_value[3*(count)-1] + box_group.children[0].position.z)/box_group.children[i].children[count].material.opacity;}
+
+			}
+			
+		}
 		return group_start;
 	}
 }
