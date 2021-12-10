@@ -1011,17 +1011,34 @@ class DDV {
 				
 			} );
 		}
-		timesteps
-		let positionKF = new THREE.VectorKeyframeTrack( '.position', [ 0, 1, 2, 3,4,5 ], [ 0, 0, 0, 0, 0,-30, 0, 0, -60 ,0, 0, -90,0, 0, -120,0, 0, -150 ] );
+
+		function range(start, end) {
+			let array = [];
+			let value_array = [];
+			for (let i = start; i < end; ++i) {
+				if (i%10 == 0){
+				array.push(i/10);}
+				value_array.push(0,0,-1*i*boxwidth)
+			}
+			return [array, value_array];
+		}
+
+		let KF_range = range(0,data[0].length)[0];
+		let KF_value =  range(0,data[0].length)[1];
+		console.log(KF_range)
+		console.log(KF_value)
+		// let positionKF = new THREE.VectorKeyframeTrack( '.position', [ 0, 1, 2, 3,4,5 ], [ 0, 0, 0, 0, 0,-30, 0, 0, -60 ,0, 0, -90,0, 0, -120,0, 0, -150 ] );
+		let positionKF = new THREE.VectorKeyframeTrack( '.position', KF_range, KF_value );
 		let opacityKF = new THREE.NumberKeyframeTrack( '.material.opacity', [ 0, 1, 2 ], [ 1, 0, 1 ] );
 		let clip = new THREE.AnimationClip( 'Action', -1, [ positionKF ] );
 		let clip2 = new THREE.AnimationClip( 'opacity', -1, [ opacityKF ] );
 		let mixer = new THREE.AnimationMixer( animationGroup );
 		let mixer2 = new THREE.AnimationMixer( animationGroup2 );
-		let clipAction = mixer.clipAction( clip );
-		let clipAction2 = mixer2.clipAction( clip2 );
-		clipAction.play();
-		clipAction2.play();
+		let movingAction = mixer.clipAction( clip );
+		let visibleAction = mixer2.clipAction(clip2);
+
+		movingAction.play();
+		visibleAction.play();
 
 		//리턴시킬 그룹객체
 		let group_start = new THREE.Group();
@@ -1043,7 +1060,7 @@ class DDV {
 		group_start.add(box_group);
 		console.log(box_group)
 		group_start.getMixer=function(){ // 리얼타임 데이터
-			return mixer,mixer2;
+			return [mixer , mixer2];
 		}
 		group_start.getInstancegroup=function(){ // 리얼타임 데이터
 			return box_group;

@@ -96,14 +96,21 @@
           .appendChild(renderer.domElement);
         
         var clock = new THREE.Clock();
-        var mixer1, mixer2 = chart.getMixer();
+        var mixer = chart.getMixer();
+        console.log(mixer)
+        
 
         renderScene();
 
         function renderScene(time) {
           const delta = clock.getDelta();
-          if ( mixer1 ) {mixer1.update( delta );}
-          if ( mixer2 ) {mixer2.update( delta );}
+          if ( mixer ) {
+            for (let m =0;m<mixer.length;m++){
+                mixer[m].update( delta );
+              }
+            }
+          
+          
 
           controls.update();
 
