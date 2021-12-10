@@ -789,7 +789,7 @@ class DDV {
 		return group_start;
 	}
 
-	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1,timesteps = 10, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
 
 		let maxRow = data.map(function (row) {
@@ -812,139 +812,56 @@ class DDV {
 				}
 			return normal_data
 		}
-		
-		function initBones() {
-
-			const segmentHeight = boxwidth+dst;
-			const segmentCount = data[0].length;
-			const height = segmentHeight * segmentCount;
-			const halfHeight = height * 0.5;
-
-			const sizing = {
-				segmentHeight: segmentHeight,
-				segmentCount: segmentCount,
-				height: height,
-				halfHeight: halfHeight
-			};
-
-			const geometry = createGeometry( sizing );
-			const bones = createBones( sizing );
-			let mesh = createMesh( geometry, bones );
-
-			mesh.scale.multiplyScalar( 1 );
-			return mesh;
-
-		}
-
-		function createGeometry( sizing ) {
-
-			const geometry = new THREE.CylinderGeometry(
-				1, // radiusTop
-				1, // radiusBottom
-				sizing.height, // height
-				8, // radiusSegments
-				sizing.segmentCount * 3, // heightSegments
-				false // openEnded
-			);
-
-			const position = geometry.attributes.position;
-
-			const vertex = new THREE.Vector3();
-
-			const skinIndices = [];
-			const skinWeights = [];
-
-			for ( let i = 0; i < position.count; i ++ ) {
-
-				vertex.fromBufferAttribute( position, i );
-
-				const y = ( vertex.y + sizing.halfHeight );
-
-				const skinIndex = Math.floor( y / sizing.segmentHeight );
-				const skinWeight = ( y % sizing.segmentHeight ) / sizing.segmentHeight;
-
-				skinIndices.push( skinIndex, skinIndex + 1, 0, 0 );
-				skinWeights.push( 1 - skinWeight, skinWeight, 0, 0 );
-
-			}
-
-			geometry.setAttribute( 'skinIndex', new THREE.Uint16BufferAttribute( skinIndices, 4 ) );
-			geometry.setAttribute( 'skinWeight', new THREE.Float32BufferAttribute( skinWeights, 4 ) );
-
-			return geometry;
-
-		}
-
-		function createBones( sizing ) {
-
-			let bones = [];
-
-			let prevBone = new THREE.Bone();
-			bones.push( prevBone );
-			prevBone.position.y = - sizing.halfHeight;
-
-			for ( let i = 0; i < sizing.segmentCount; i ++ ) {
-
-				const bone = new THREE.Bone();
-				bone.position.x = sizing.segmentHeight;
-				bones.push( bone );
-				prevBone.add( bone );
-				prevBone = bone;
-
-			}
-
-			return bones;
-
-		}
-
-		function createMesh( geometry, bones ) {
-
-			const material = new THREE.MeshPhongMaterial( {
-				color: 0x156289,
-				emissive: 0x072534,
-				side: THREE.DoubleSide,
-				
-			} );
-
-			const mesh = new THREE.SkinnedMesh( geometry,	material );
-			mesh.rotation.z = 0.5*Math.PI;
-			mesh.rotation.y = 0.5*Math.PI;
-			mesh.position.z = -bones[0].position.y - boxwidth
-			mesh.position.y = boxwidth
-			const skeleton = new THREE.Skeleton( bones );
-
-			mesh.add( bones[ 0 ] );
-
-			mesh.bind( skeleton );
-
-			return mesh;
-
-		}
+		let animationGroup = new THREE.AnimationObjectGroup();
+		let animationGroup2 = new THREE.AnimationObjectGroup();
 
 		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a, b){
-			let geometry = new THREE.BoxGeometry(
-				boxwidth,
-				data,
-				boxheight
-			);
+			// let geometry = new THREE.BoxGeometry(
+			// 	boxwidth,
+			// 	data,
+			// 	boxheight
+			// );
+
+			let length = boxwidth+dst, width = data[b];
+
+			let shape = new THREE.Shape();
+			shape.moveTo( 0,0 );
+			shape.lineTo( 0, width );
+			shape.lineTo( length, width + (data[b+1]-width) );
+			shape.lineTo( length, 0 );
+			shape.lineTo( 0, 0 );
+
+			let extrudeSettings = {
+				steps: 1,
+				depth: boxwidth*0.5,
+				bevelEnabled: true,
+				bevelThickness: 0,
+				bevelSize: 0,
+				bevelOffset: 0,
+				bevelSegments: 10
+			};
+
+			const geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
 			
 			if(use_auto_color===true){
-				boxcolor = auto_color(data);
+				boxcolor = auto_color( 100/(a+1) );
 			}
-			let material = new THREE.MeshPhongMaterial({color: boxcolor})
+			let material = new THREE.MeshPhongMaterial({color: boxcolor, transparent : true, opacity : 0.7})
 			let cube = new THREE.Mesh(geometry, material);
+			cube.rotation.y = 1.5*Math.PI;
 			cube.position.x = (boxwidth + dst) * a;
-			cube.position.y = (data) / 2
+			// cube.position.y = (data[b]) / 2
 			cube.position.z = (boxheight + dst) * b;
-			cube.castShadow = true;
-			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data) / 2,(boxheight + dst) * (b+1)));
+			
+			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data[b]) / 2,(boxheight + dst) * (b+1)));
 			cube.children[0].visible = false;
-			cube.pickEvent = function(turn=true){
-				cube.children[0].visible = turn;
-			}
-			cube.clickEvent = function(){
-				console.log(cube)
-			}
+			// cube.pickEvent = function(turn=true){
+			// 	cube.children[0].visible = turn;
+			// }
+			// cube.clickEvent = function(){
+			// 	console.log(cube)
+			// }
+			animationGroup2.add(cube);
 			return cube
 		}
 		function make_EdgeLine(geometry,position_x,position_y,position_z){
@@ -968,7 +885,7 @@ class DDV {
 			return edgeline_group;
 		}
 
-		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=0) {
+		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, distance_towall=1.5) {
 			let wall_group = new THREE.Group();
 			{ // 바닥
 				let geometry = new THREE.PlaneGeometry(data.length * (boxwidth + dst) + 2*distance_towall,(data[0].length * (boxheight + dst)) + 2*distance_towall);
@@ -1034,9 +951,9 @@ class DDV {
 
 			return wall_group
 		}
-		function auto_color(cur_value){
-			let red = Math.round((cur_value/20)*100);
-			let color = 'rgb('+String(red)+'%, 40%, 80%)';
+		function auto_color(line){
+			let red = Math.round((line));
+			let color = 'rgb(40%,'+String(red)+'%, 80%)';
 			
 			return color;
 
@@ -1057,13 +974,16 @@ class DDV {
 		}
 
 		function read_array(data, boxwidth, boxheight, boxcolor, dst){
-			let bone_group = new THREE.Group();
+			let box_group = new THREE.Group();
 			for (let i = 0; i < (data.length); i++) {
-				let bones = initBones()
-				bones.position.x = i*(boxwidth+dst)
-				bone_group.add(bones);
+				let box_group_line = new THREE.Group();
+				for (let j = 0; j < data[i].length; j++) {
+					box_group_line.add(make_chart(data[i], boxwidth, boxheight, boxcolor, dst, i, j));
+				}
+				box_group.add(box_group_line);
+				animationGroup.add( box_group_line );
 			}
-			return bone_group;
+			return box_group;
 		}
 
 		function make_label(text,font_path='./helvetiker_regular.typeface.json',group,positionx,positiony,positionz,rotationx=0,rotationy=0,rotationz=0){
@@ -1091,20 +1011,17 @@ class DDV {
 				
 			} );
 		}
-		// 애니메이션 클립 만들어줘야함
-		function read_array_position(data){
-			let start = 0;
-			for (let i = 0; i < (data.length); i++) {
-				for (let j = 0; j < (data[0].length); j++) {
-					if (j<2){
-						bone_group.children[i].skeleton.bones[j].position.x = normal_data[i][j];	
-					}else{
-					bone_group.children[i].skeleton.bones[j].position.x += normal_data[i][j] - normal_data[i][j-1];}
-					console.log(normal_data[i][j])
-				}
-			}
-		}
-		
+		timesteps
+		let positionKF = new THREE.VectorKeyframeTrack( '.position', [ 0, 1, 2, 3,4,5 ], [ 0, 0, 0, 0, 0,-30, 0, 0, -60 ,0, 0, -90,0, 0, -120,0, 0, -150 ] );
+		let opacityKF = new THREE.NumberKeyframeTrack( '.material.opacity', [ 0, 1, 2 ], [ 1, 0, 1 ] );
+		let clip = new THREE.AnimationClip( 'Action', -1, [ positionKF ] );
+		let clip2 = new THREE.AnimationClip( 'opacity', -1, [ opacityKF ] );
+		let mixer = new THREE.AnimationMixer( animationGroup );
+		let mixer2 = new THREE.AnimationMixer( animationGroup2 );
+		let clipAction = mixer.clipAction( clip );
+		let clipAction2 = mixer2.clipAction( clip2 );
+		clipAction.play();
+		clipAction2.play();
 
 		//리턴시킬 그룹객체
 		let group_start = new THREE.Group();
@@ -1121,24 +1038,13 @@ class DDV {
 		group_start.add(light);
 		
 		//그래프 만들기
-		let bone_group = read_array(normal_data, boxwidth, boxheight, boxcolor, dst);
-		bone_group.name = "bone_group"
-		group_start.add(bone_group);
-		
-		read_array_position(normal_data)
-		console.log(bone_group.children[0].skeleton.bones)
-		group_start.pushData=function(new_data){ // 리얼타임 데이터
-			let noraml_newdata = make_normaldata(new_data);
-			let init_arr = normal_data.flat();
-			let arr = noraml_newdata.flat();
-			if (arr.length == box_group.children.length){ //shape 같을때만 동작
-				for (let i = 0; i < (arr.length); i++) {
-					box_group.children[i].scale.set(1,(arr[i]/init_arr[i])/2,1)
-					box_group.children[i].position.y = (box_group.children[i].geometry.parameters.height * box_group.children[i].scale.y)/2;
-				}
-			}
+		let box_group = read_array(normal_data, boxwidth, boxheight, boxcolor, dst);
+		box_group.name = "box_group"
+		group_start.add(box_group);
+		console.log(box_group)
+		group_start.getMixer=function(){ // 리얼타임 데이터
+			return mixer,mixer2;
 		}
-
 		group_start.getInstancegroup=function(){ // 리얼타임 데이터
 			return box_group;
 		}

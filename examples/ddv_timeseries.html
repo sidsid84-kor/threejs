@@ -52,7 +52,7 @@
         }
 
         let n = 5;
-        let nv = 10;
+        let nv = 100;
         let arr1 = new Array(n);
         for (var i = 0; i < n; i++) {
           arr1[i] = new Array(nv);
@@ -70,7 +70,8 @@
           (data = arr1),
           (boxwidth = 3),
           (boxheight = 3),
-          (dst = 3),
+          (dst = 1),
+          (timesteps = 10),
           (x_label = x_label),
           (z_label = z_label),
           (use_auto_color = true),
@@ -93,21 +94,17 @@
         document
           .getElementById('webgl-output')
           .appendChild(renderer.domElement);
-
         
+        var clock = new THREE.Clock();
+        var mixer1, mixer2 = chart.getMixer();
 
         renderScene();
 
         function renderScene(time) {
-          // time += 0.001;
-          // ss += 1; // livedata event
-          // for (var i = 0; i < n; i++) {
-          //     for (let j =0;j<nv;j++){
-          //         arr2[i][j] += 0.7*Math.sin(i+ss*0.1) ;
-          //     }
-          // }
-          // chart.pushData(arr2);
-          
+          const delta = clock.getDelta();
+          if ( mixer1 ) {mixer1.update( delta );}
+          if ( mixer2 ) {mixer2.update( delta );}
+
           controls.update();
 
           requestAnimationFrame(renderScene);
