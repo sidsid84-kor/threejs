@@ -568,6 +568,7 @@ class DDV {
 			let cylinderLength = data[0] - data[1];
 			let stickLength = data[2] - data[3];
 			let isReversed=false;
+			console.log(normal_data[a])
 			if (data[0] < data[1]){
 				cylinderLength = data[1]-data[0];
 				isReversed=true;
@@ -789,7 +790,7 @@ class DDV {
 		return group_start;
 	}
 
-	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1, timesteps = 20, speed = 10, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1, timesteps = 20, speed = 10, lineOnly = false ,x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
 		console.log(timesteps)
 		let maxRow = data.map(function (row) {
@@ -816,15 +817,23 @@ class DDV {
 		// let animationGroup2 = new THREE.AnimationObjectGroup();
 		
 
-		function make_chart(data, boxwidth, boxheight, boxcolor, dst, a, b){
+		function make_chart(data, boxwidth, boxheight, lineOnly=false , boxcolor, dst, a, b){
 			let length = boxwidth+dst, width = data[b];
-
 			let shape = new THREE.Shape();
-			shape.moveTo( 0,0 );
-			shape.lineTo( 0, width );
-			shape.lineTo( length, width + (data[b+1]-width) );
-			shape.lineTo( length, 0 );
-			shape.lineTo( 0, 0 );
+
+			if (lineOnly == true){
+				shape.moveTo( 0, width-1 );
+				shape.lineTo( 0, width );
+				shape.lineTo( length, width + (data[b+1]-width) );
+				shape.lineTo( length, width + (data[b+1]-width) -1 );
+				shape.lineTo( 0,width-1);
+			}else{
+				shape.moveTo( 0,0 );
+				shape.lineTo( 0, width );
+				shape.lineTo( length, width + (data[b+1]-width) );
+				shape.lineTo( length, 0 );
+				shape.lineTo( 0, 0 );
+			}
 
 			let extrudeSettings = {
 				steps: 1,
@@ -861,14 +870,7 @@ class DDV {
 			// animationGroup2.add(cube);
 			return cube
 		}
-		function make_EdgeLine(geometry,position_x,position_y,position_z){
-			let edgeline_group = new THREE.Group();
-			let edges = new THREE.EdgesGeometry( geometry );
-			let material = new THREE.LineBasicMaterial( { color: 0xffffff } )
-			let line = new THREE.LineSegments( edges, material );
-			edgeline_group.add(line)
-			return edgeline_group;
-		}
+		
 
 		function make_wall(data, boxwidth, boxheight, dst, x_label, z_label, max_value, yaxis_segment, timesteps, distance_towall=1.5) {
 			let wall_group = new THREE.Group();
@@ -963,7 +965,7 @@ class DDV {
 			for (let i = 0; i < (data.length); i++) {
 				let box_group_line = new THREE.Group();
 				for (let j = 0; j < data[i].length; j++) {
-					box_group_line.add(make_chart(data[i], boxwidth, boxheight, boxcolor, dst, i, j));
+					box_group_line.add(make_chart(data[i], boxwidth, boxheight, lineOnly, boxcolor, dst, i, j));
 				}
 				box_group.add(box_group_line);
 				animationGroup.add( box_group_line );
@@ -1030,7 +1032,7 @@ class DDV {
 		let group_start = new THREE.Group();
 		let normal_data = make_normaldata(data);
 		// 벽 그리기
-		let wall = make_wall(normal_data, boxwidth, boxheight, dst,x_label,z_label,20, yaxis_segment,timesteps);
+		let wall = make_wall(normal_data, boxwidth, boxheight, dst, x_label, z_label, 20, yaxis_segment,timesteps);
 		wall.name="wall";
 		group_start.add(wall);
 	
@@ -1061,7 +1063,6 @@ class DDV {
 			for (let i = 0; i < data.length; i++) {
 				
 				if ( box_group.children[0].position.z <= - step*(count+timesteps+1) ){
-					
 					count++;
 				}else{
 					if (count < box_group.children[i].children.length-timesteps){
