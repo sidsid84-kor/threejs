@@ -789,7 +789,7 @@ class DDV {
 		return group_start;
 	}
 
-	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1, timesteps = 20, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
+	timeSeries3Dhart(data,boxwidth, boxheight, dst = 1, timesteps = 20, speed = 10, x_label = null, z_label = null, use_auto_color = true, yaxis_segment = 10, boxcolor='rgb(10%, 40%, 80%)'){
 		var original_data = data;
 		console.log(timesteps)
 		let maxRow = data.map(function (row) {
@@ -846,10 +846,10 @@ class DDV {
 			cube.rotation.y = 1.5*Math.PI;
 			cube.position.x = (boxwidth + dst) * a;
 			// cube.position.y = (data[b]) / 2
-			cube.position.z = (boxheight + dst) * b;
+			cube.position.z = (boxheight + dst) * (b + timesteps);
 			
-			cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data[b]) / 2,(boxheight + dst) * (b+1)));
-			cube.children[0].visible = false;
+			// cube.add(make_EdgeLine(geometry,((original_data.length-a)*(boxheight + dst)),(data[b]) / 2,(boxheight + dst) * (b+1)));
+			cube.visible = false;
 						
 			// cube.pickEvent = function(turn=true){
 			// 	cube.children[0].visible = turn;
@@ -866,18 +866,6 @@ class DDV {
 			let edges = new THREE.EdgesGeometry( geometry );
 			let material = new THREE.LineBasicMaterial( { color: 0xffffff } )
 			let line = new THREE.LineSegments( edges, material );
-			let points = [];
-			points.push( new THREE.Vector3( 0, position_y, 0 ) );
-			points.push( new THREE.Vector3( 0, position_y, -position_z ) );
-			let points2 = [];
-			points2.push( new THREE.Vector3( 0, position_y, 0 ) );
-			points2.push( new THREE.Vector3( position_x, position_y, 0 ) );
-			let geometry2 = new THREE.BufferGeometry().setFromPoints( points );
-			let geometry3 = new THREE.BufferGeometry().setFromPoints( points2 );
-			let line2 = new THREE.Line( geometry2, material );
-			let line3 = new THREE.Line( geometry3, material );
-			edgeline_group.add(line3)
-			edgeline_group.add(line2)
 			edgeline_group.add(line)
 			return edgeline_group;
 		}
@@ -919,8 +907,8 @@ class DDV {
 			];
 			let position_z = [
 				(-0.5*(boxheight+dst)-distance_towall),
-				(timesteps * (boxheight + dst))/2 - distance_towall,
-				(timesteps * (boxheight + dst))+distance_towall,
+				(timesteps * (boxheight + dst))/2 -distance_towall,
+				(timesteps * (boxheight + dst)),
 				(timesteps * (boxheight + dst))/2 -distance_towall
 							];
 			
@@ -1019,8 +1007,8 @@ class DDV {
 			}
 			return [array, value_array];
 		}
-		let speed = 5
-		let KF_temp = range(0,data[0].length,speed);
+		
+		let KF_temp = range(0,data[0].length+timesteps,speed);
 		let KF_range = KF_temp[0]
 		let KF_value =  KF_temp[1]
 		console.log(KF_range)
@@ -1028,6 +1016,7 @@ class DDV {
 		let positionKF = new THREE.VectorKeyframeTrack( '.position', KF_range, KF_value );
 		let opacityKF = new THREE.NumberKeyframeTrack( '.material.opacity', [ 0, 1, 2 ], [ 1, 0, 1 ] );
 		let clip = new THREE.AnimationClip( 'Action', -1, [ positionKF ] );
+		
 		// let clip2 = new THREE.AnimationClip( 'opacity', -1, [ opacityKF ] );
 		let mixer = new THREE.AnimationMixer( animationGroup );
 		// let mixer2 = new THREE.AnimationMixer( animationGroup2 );
@@ -1064,17 +1053,33 @@ class DDV {
 		}
 		// let timestep = KF_range[1]-KF_range[0]
 		let step = -KF_value[5] - KF_value[2]
-		console.log(-KF_value[5] - KF_value[2])
+		
 		let count = 0;
 		
 		group_start.takeAnimation=function(){
-			console.log(box_group.children[0].position.z)
+			
 			for (let i = 0; i < data.length; i++) {
-				if ( box_group.children[0].position.z <= -step*count ){ 
-					box_group.children[i].children[count].material.opacity = 0;
+				
+				if ( box_group.children[0].position.z <= - step*(count+timesteps+1) ){
+					
 					count++;
-				}else{box_group.children[i].children[count].material.opacity += (KF_value[3*(count)-1] + box_group.children[0].position.z)/box_group.children[i].children[count].material.opacity;}
-
+				}else{
+					if (count < box_group.children[i].children.length-timesteps){
+						if (count < timesteps){
+							console.log(count)
+							box_group.children[i].children[count].visible = true;
+							box_group.children[i].children[count].material.opacity = 0.7;
+						}else{						
+							box_group.children[i].children[count+timesteps-1].visible = true;
+							box_group.children[i].children[count+timesteps-1].material.opacity = 0.7;
+						}
+					}
+					// box_group.children[i].children[count].material.opacity += (KF_value[3*(count)-1] + box_group.children[0].position.z)/(30000/speed);
+					box_group.children[i].children[count].material.opacity = 0;
+				}
+				if (box_group.children[0].position.z >= -step ){
+					count = 0 ;
+				}
 			}
 			
 		}

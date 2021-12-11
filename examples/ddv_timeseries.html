@@ -72,6 +72,7 @@
           (boxheight = 3),
           (dst = 1),
           (timesteps = 20),
+          (speed = 10),
           (x_label = x_label),
           (z_label = z_label),
           (use_auto_color = true),
@@ -81,16 +82,7 @@
 
         scene.add(chart);
         
-        
-        let arr2 = new Array(n); //livedata event
-        for (var i = 0; i < n; i++) {
-            arr2[i] = new Array(nv);
-            for (let j =0;j<nv;j++){
-                arr2[i][j]= 15;
-            }
-        }
-        let ss =1;
-
+       
         document
           .getElementById('webgl-output')
           .appendChild(renderer.domElement);
