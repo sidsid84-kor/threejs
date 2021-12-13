@@ -56,9 +56,10 @@
                 const color = 0xFFFFFF;
                 const intensity = 1;
                 const light = new THREE.DirectionalLight(color, intensity);
-                light.position.set(-10, 2, 4);
+                light.position.set(-10, 2, 10);
                 scene.add(light);
-
+                const alight = new THREE.AmbientLight( 0xffffff ); // soft white light
+                scene.add( alight );
                 
 
                 function updateCamera() {
@@ -78,7 +79,7 @@
                                             x_label=x_label,
                                             z_label=porkLabel,
                                             use_auto_color = true,
-                                            yaxis_segment = 15,
+                                            yaxis_segment = 10,
                                         )
                 
                 scene.add(chart);
@@ -86,18 +87,15 @@
 
                 document.getElementById("webgl-output").appendChild(renderer.domElement);
                 
-                window.addEventListener('mousemove', ddv.setPickPosition.bind(ddv));
-                window.addEventListener('mousedown', ddv.pickClickEvent.bind(ddv));
-                window.addEventListener('mouseout', ddv.clearPickPosition.bind(ddv));
-                window.addEventListener('mouseleave', ddv.clearPickPosition.bind(ddv));
+              
 
                 renderScene();
 
                 function renderScene(time) {
                     
-                    ddv.pick(ddv.get_position(), chart, camera, time);
+                    
                     controls.update()
-                    console.log(camera.position)
+                    
                     requestAnimationFrame(renderScene);
 
                     renderer.render(scene, camera);
